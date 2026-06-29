@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>语言学知识点背诵神器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f3f4f6;
+            overflow: hidden; /* Prevent body scroll for app-like feel */
+            overscroll-behavior-y: contain;
+        }
+
+        /* 3D Card Flip Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Swipe Card Container */
+        #card-container {
+            position: relative;
+            width: 100%;
+            height: 60vh;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .swipe-card {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            background: white;
+            cursor: grab;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            transform-origin: 50% 100%;
+            will-change: transform;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .swipe-card:active {
+            cursor: grabbing;
+        }
+
+        .swipe-card.dragging {
+            transition: none; /* Disable transition during drag for immediate feedback */
+        }
+
+        /* Swipe Stamps (Keep / Discard) */
+        .stamp {
+            position: absolute;
+            top: 2rem;
+            padding: 0.5rem 1.5rem;
+            border: 4px solid;
+            border-radius: 0.5rem;
+            font-size: 2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            opacity: 0;
+            z-index: 10;
+            transform: rotate(-15deg);
+        }
+
+        .stamp-remember {
+            right: 2rem;
+            color: #22c55e;
+            border-color: #22c55e;
+            transform: rotate(15deg);
+        }
+
+        .stamp-forgot {
+            left: 2rem;
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+
+        /* Content Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        
+        .correct-ans { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #166534 !important;}
+        .wrong-ans { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important;}
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col text-gray-800">
+
+    <!-- App Header -->
+    <header class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center z-20">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="app.showScreen('home')">
+            <i class="fa-solid fa-brain text-2xl"></i>
+            <h1 class="text-xl font-bold tracking-wide">LinguaMaster</h1>
+        </div>
+        <div id="header-stats" class="hidden text-sm font-semibold bg-indigo-700 px-3 py-1 rounded-full">
+            <span id="progress-text">0/28</span>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 relative overflow-hidden flex flex-col items-center justify-center p-4">
+        
+        <!-- Screen 1: Home/Menu -->
+        <div id="screen-home" class="w-full max-w-md w-full flex flex-col gap-6 animate-fade-in">
+            <div class="text-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">语言学复习</h2>
+                <p class="text-gray-500">选择一种模式开始你的学习之旅</p>
+            </div>
+
+            <button onclick="app.startSwipeMode()" class="group relative overflow-hidden bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl hover:border-indigo-300 transition-all text-left flex items-center gap-6">
+                <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">滑动记忆 (Swipe)</h3>
+                    <p class="text-sm text-gray-500">左滑记住，右滑重温。点击卡片翻看释义。</p>
+                </div>
+            </button>
+
+            <button onclick="app.startQuizMode()" class="group relative overflow-hidden bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl hover:border-blue-300 transition-all text-left flex items-center gap-6">
+                <div class="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">随机测验 (Quiz)</h3>
+                    <p class="text-sm text-gray-500">根据释义选择正确的语言学术语。</p>
+                </div>
+            </button>
+
+            <button onclick="app.startKnowledgeMode()" class="group relative overflow-hidden bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl hover:border-emerald-300 transition-all text-left flex items-center gap-6">
+                <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">知识库 (Knowledge Base)</h3>
+                    <p class="text-sm text-gray-500">直接浏览所有词汇的英文原句与中文释义。</p>
+                </div>
+            </button>
+        </div>
+
+        <!-- Screen 2: Swipe Mode -->
+        <div id="screen-swipe" class="hidden w-full h-full flex-col items-center justify-center max-w-md mx-auto">
+            <div id="card-container" class="perspective-1000 z-10">
+                <!-- Cards injected via JS -->
+            </div>
+            
+            <div class="flex justify-center gap-8 mt-8 w-full px-6 z-0">
+                <button onclick="app.manualSwipe('right')" class="w-16 h-16 rounded-full bg-white shadow-lg border-2 border-red-100 text-red-500 text-2xl hover:bg-red-50 hover:scale-105 transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <button onclick="app.flipCurrentCard()" class="w-14 h-14 mt-1 rounded-full bg-white shadow-md border border-gray-200 text-gray-400 text-xl hover:bg-gray-50 hover:scale-105 transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button onclick="app.manualSwipe('left')" class="w-16 h-16 rounded-full bg-white shadow-lg border-2 border-green-100 text-green-500 text-2xl hover:bg-green-50 hover:scale-105 transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-check"></i>
+                </button>
+            </div>
+            <div class="text-center mt-4 text-xs text-gray-400">提示: 可直接拖拽卡片。左滑记住，右滑没记住。</div>
+        </div>
+
+        <!-- Screen 3: Quiz Mode -->
+        <div id="screen-quiz" class="hidden w-full max-w-lg flex-col gap-4 animate-fade-in h-full pb-10 overflow-y-auto custom-scrollbar">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-2">
+                <div class="flex justify-between items-center mb-3 text-sm text-indigo-600 font-bold">
+                    <span>Question <span id="quiz-q-num">1</span></span>
+                    <span>Score: <span id="quiz-score">0</span></span>
+                </div>
+                <div class="text-gray-800 text-lg md:text-xl font-medium leading-relaxed" id="quiz-question-eng">
+                    <!-- Eng Question injected here -->
+                </div>
+                <div class="text-gray-600 mt-4 text-sm leading-relaxed border-t pt-3" id="quiz-question-zh">
+                    <!-- Zh Explanation injected here -->
+                </div>
+            </div>
+
+            <div id="quiz-options" class="flex flex-col gap-3">
+                <!-- Options injected via JS -->
+            </div>
+
+            <button id="quiz-next-btn" onclick="app.nextQuizQuestion()" class="hidden mt-4 w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow hover:bg-indigo-700 transition-colors">
+                下一题 / Next
+            </button>
+        </div>
+
+        <!-- Screen 5: Knowledge Base -->
+        <div id="screen-knowledge" class="hidden w-full max-w-2xl flex-col gap-4 animate-fade-in h-full pb-10 overflow-y-auto custom-scrollbar">
+            <div class="sticky top-0 bg-[#f3f4f6]/95 backdrop-blur z-10 py-3 mb-2 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800 px-2">全部知识点 <span id="knowledge-title-count"></span></h2>
+            </div>
+            <div id="knowledge-list" class="flex flex-col gap-4 px-2">
+                <!-- Items injected via JS -->
+            </div>
+        </div>
+
+        <!-- Screen 4: Results -->
+        <div id="screen-results" class="hidden w-full max-w-md bg-white p-8 rounded-3xl shadow-xl text-center animate-fade-in">
+            <div class="w-24 h-24 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">复习完成!</h2>
+            <p id="results-message" class="text-gray-500 mb-8">你已经看完了所有卡片。</p>
+            
+            <div class="grid grid-cols-2 gap-4 mb-8" id="results-stats-container">
+                <div class="bg-gray-50 p-4 rounded-xl">
+                    <div class="text-sm text-gray-500 mb-1">已记住</div>
+                    <div id="results-remembered" class="text-2xl font-bold text-green-500">0</div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-xl">
+                    <div class="text-sm text-gray-500 mb-1">需复习</div>
+                    <div id="results-forgot" class="text-2xl font-bold text-red-500">0</div>
+                </div>
+            </div>
+
+            <button onclick="app.showScreen('home')" class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl shadow hover:bg-indigo-700 transition-colors">
+                返回主菜单
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // Data Extraction from the provided document
+        const linguisticsData = [
+            {
+                id: 1,
+                term: "Linguistics",
+                zh_term: "语言学",
+                eng: "\"Linguistics is generally defined as the scientific study of language.\"",
+                zh: "语言学通常被定义为对语言的科学研究。它不局限于研究某一种特定语言,而是将人类语言作为一个普遍现象,透过系统化地观察、收集数据、提出假设并反覆验证,来探索语言的本质、结构和底层规则。"
+            },
+            {
+                id: 2,
+                term: "Langue and parole",
+                zh_term: "语言与言语",
+                eng: "\"Langue refers to the abstract linguistic system shared by all the members of a speech community, and parole refers to the realization of langue in actual use.\"",
+                zh: "这是由瑞士语言学家索绪尔提出的著名区分。Langue (语言)是抽象且相对稳定的,指整个言语社群共同遵守的规则、惯例和符号系统; Parole(言语)则是具体且因人而异的,指这些抽象规则在日常生活中的实际运用与具体口头表达。"
+            },
+            {
+                id: 3,
+                term: "Competence and performance",
+                zh_term: "语言能力与语言表现",
+                eng: "\"Chomsky defines competence as the ideal user's knowledge of the rules of his language, and performance the actual realization of this knowledge in linguistic communication.\"",
+                zh: "由美国语言学家乔姆斯基提出,与索绪尔的区分相似但侧重心理学层面。Competence(语言能力)指理想的说话者大脑中内在化掌握的母语语法规则知识; Performance(语言表现/运用)指这种内在知识在实际交流中的具体体现,由于记忆限制、口误、疲劳或情绪等干扰,语言表现往往是不完美的。"
+            },
+            {
+                id: 4,
+                term: "Definition of Language",
+                zh_term: "语言的定义",
+                eng: "\"Language is a system of arbitrary vocal symbols used for human communication.\"",
+                zh: "这是现代语言学界广泛接受的语言定义:语言是一个用于人类交流的、具有任意性的语音符号系统。它强调了语言具备系统性、任意性、语音媒介性以及人类社会交流的基本功能。"
+            },
+            {
+                id: 5,
+                term: "Arbitrariness",
+                zh_term: "任意性",
+                eng: "\"Arbitrariness... means that there is no logical connection between meanings and sounds.\"",
+                zh: "语言的核心设计特征之一。指语言的语音形式(声音)与它所代表的概念(意义)之间,没有任何物理上或逻辑上的必然联系(例如,并没有物理原因规定「狗」这种动物必须发音为\"dog\")。不过,语言中也有少数例外,如拟声词(如 rumble, crash),它们是对自然界声音的模仿,具备一定的理据性,不是完全任意的。"
+            },
+            {
+                id: 6,
+                term: "Displacement",
+                zh_term: "移位性/不受时空限制性",
+                eng: "\"Displacement... Language can be used to refer to things which are present or not present, real or imagined matters in the past, present, or future, or in far away places.\"",
+                zh: "人类语言区分于动物沟通系统的重要特征。它意味着人类可以使用语言来谈论当下并不存在的事物,可以跨越物理障碍,谈论过去的历史、未来的计划、遥远空间的人事物,甚至完全虚构或想像的内容。"
+            },
+            {
+                id: 7,
+                term: "Functions of language",
+                zh_term: "语言的功能",
+                eng: "\"...three main functions are often recognized of language: the descriptive function, the expressive function, and the social function...\"",
+                zh: "描述功能(Descriptive):传达客观事实、概念与资讯; 表达功能(Expressive):用于表达说话者主观的情感、态度、偏好、偏见或价值观; 社会功能(Social/interpersonal):主要用于在社会交往中建立、维持或改变人际关系。"
+            },
+            {
+                id: 8,
+                term: "Phonetics",
+                zh_term: "语音学",
+                eng: "\"Phonetics is defined as the study of the phonic medium of language; it is concerned with all the sounds that occur in the world's languages.\"",
+                zh: "对语言的语音媒介的研究,探讨人类语言中所有声音的物理、生理特征。包含: 发音语音学(Articulatory), 听觉语音学(Auditory), 声学语音学(Acoustic)。"
+            },
+            {
+                id: 9,
+                term: "Phonology",
+                zh_term: "音系学/音韵学",
+                eng: "Phonology is a \"branch of study related to sounds\"... interested in \"how sounds are put together and used to convey meaning in communication\".",
+                zh: "语言学中研究声音系统的分支。关注声音在特定语言系统中如何组合、运作，以及如何用来传达意义。"
+            },
+            {
+                id: 10,
+                term: "Vowel Classifications",
+                zh_term: "元音的分类基准",
+                eng: "According to \"the openness of the mouth\", vowels are classified into: \"close, semi-close, semi-open, and open vowels\".",
+                zh: "根据发音时「口腔的开合度」(即舌位高低)分类。包含：闭元音(Close)、半闭/半开元音(Semi-close/open)、开元音(Open)。"
+            },
+            {
+                id: 11,
+                term: "Diphthongs",
+                zh_term: "双元音",
+                eng: "Diphthongs are those vowels \"which are produced by moving from one vowel position to another through intervening positions.\"",
+                zh: "双元音的发音是一个动态的滑动过程。发音器官会从一个元音的起始位置,平滑地过渡、滑向另一个元音的结束位置(如 /eɪ/, /aɪ/)。"
+            },
+            {
+                id: 12,
+                term: "Broad and Narrow transcription",
+                zh_term: "宽式标音与严式标音",
+                eng: "Broad transcription: \"transcription with letter-symbols only.\" Narrow transcription: \"transcription with letter-symbols together with the diacritics.\"",
+                zh: "宽式标音:只使用基本国际音标字母,忽略非本质发音细节(常用于字典)。严式标音:加上变音符号(diacritics),极精确记录发音微小细节(语音学家使用)。"
+            },
+            {
+                id: 13,
+                term: "Phone, phoneme, and allophone",
+                zh_term: "音素、音位、音位变体",
+                eng: "Phone: \"a phonetic unit or segment.\" Phoneme: \"a phonological unit; that is of distinctive value.\" Allophone: \"different phones which can represent a phoneme.\"",
+                zh: "音素(Phone):实际发出的具体声音[]; 音位(Phoneme):能区分词义的最小抽象语音单位//; 音位变体(Allophone):同个音位在不同语境下的不同具体发音形式。"
+            },
+            {
+                id: 14,
+                term: "Assimilation rule",
+                zh_term: "同化规则",
+                eng: "\"The assimilation rule assimilates one sound to another by 'copying' a feature of a sequential phoneme, thus making the two phones similar.\"",
+                zh: "连贯语流中,一个音受到相邻音影响,在发音特征上「复制」了相邻音的属性,使发音省力。如 in- + possible -> impossible。"
+            },
+            {
+                id: 15,
+                term: "Suprasegmental features",
+                zh_term: "超音段特征",
+                eng: "\"The phonemic features that occur above the level of the segments... these are the phonological properties of such units as the syllable, the word, and the sentence.\"",
+                zh: "不局限于单个音段(元音/辅音),而是超越、叠加在音节、单字或整个句子之上的语音特征。包含重音、语调和声调。"
+            },
+            {
+                id: 16,
+                term: "Stress",
+                zh_term: "重音",
+                eng: "\"Depending on the context... there are two kinds of stress; word stress and sentence stress. The location of stress in English distinguishes meaning.\"",
+                zh: "属于超音段特征。分「词重音」和「句重音」。英语中，词重音位置具有区分语义或词性的功能(如名词 'import 和动词 im'port)。"
+            },
+            {
+                id: 17,
+                term: "Tone",
+                zh_term: "声调",
+                eng: "\"Tones are pitch variations, which are caused by the differing rates of vibration of the vocal cords... tone is a suprasegmental feature.\"",
+                zh: "属于超音段特征。声带振动频率不同产生的音高(pitch)变化。在「声调语言」(如汉语)中,音高变化具有区别词义的核心作用(如妈麻马骂)。"
+            },
+            {
+                id: 18,
+                term: "Intonation",
+                zh_term: "语调",
+                eng: "\"When pitch, stress and sound length are tied to the sentence rather than the word in isolation, they are collectively known as intonation.\"",
+                zh: "属于超音段特征。音高、重音和音长与整个句子相结合时构成语调。能传达态度和隐含意义(如降调表陈述,升调表疑问)。"
+            },
+            {
+                id: 19,
+                term: "Open class and closed class words",
+                zh_term: "开放类词与封闭类词",
+                eng: "Open class: \"content words... new words can be added.\" Closed class: \"grammatical or functional words... few new words are added.\"",
+                zh: "开放类(实词): 名词、动词、形容词等,有实质意义,可不断创造新词。封闭类(虚词/功能词): 连词、介词、代词等,发挥语法功能,数量有限且稳定。"
+            },
+            {
+                id: 20,
+                term: "Morpheme",
+                zh_term: "语素/词素",
+                eng: "\"...the smallest unit of language that carries information about meaning or function.\"",
+                zh: "词形结构中最核心要素，语言中能表达意义或发挥语法功能的最小单位。不可再拆分。(如 reader = read + er)。"
+            },
+            {
+                id: 21,
+                term: "Free and bound morphemes",
+                zh_term: "自由语素与黏着语素",
+                eng: "\"A morpheme which can be a word by itself is called a free morpheme, whereas a morpheme that must be attached to another one is a bound morpheme.\"",
+                zh: "自由语素: 能独立存在、直接作为单字使用(如 boy)。黏着语素: 不能单独成词,必须依附其他语素才能出现(如 -s, un-)。"
+            },
+            {
+                id: 22,
+                term: "Allomorphs",
+                zh_term: "语素变体",
+                eng: "\"Morphemes may have different forms... The variant forms of a morpheme are called its allomorphs.\"",
+                zh: "同个语素在不同语音环境或拼写规则下展现的不同外在形式。如复数 -s 有 /s/, /z/, /ɪz/ 三种发音变体; 冠词有 a, an。"
+            },
+            {
+                id: 23,
+                term: "Inflectional morphemes",
+                zh_term: "屈折语素",
+                eng: "\"...bound morphemes which are for the most part purely grammatical markers and signify such concepts as tense, number, case... they never change their syntactic category.\"",
+                zh: "一种黏着语素,不改变词义,作为纯粹语法标记表示时态(-ed)、单复数(-s)等。最大特点：绝不会改变被附着单字的词性(句法类别)。"
+            },
+            {
+                id: 24,
+                term: "Compounds",
+                zh_term: "复合词",
+                eng: "\"...compound words, to be more exact, is by stringing words together...\"",
+                zh: "将两个或以上本身可独立存在的单字(自由语素)直接串联组合,衍生出全新单字的构词法(如 greenhouse, pickpocket)。"
+            },
+            {
+                id: 25,
+                term: "Syntax",
+                zh_term: "句法学",
+                eng: "\"study of these rules\" that govern \"the combination of words to form grammatically permissible sentences...\"",
+                zh: "主要研究单字如何根据特定的规律与结构,组合排列成符合语法规则的、可被接受的句子。研究句子的内部结构与造句规则。"
+            },
+            {
+                id: 26,
+                term: "Word-level categories",
+                zh_term: "词级范畴/词类",
+                eng: "Major lexical categories: \"Noun, Verb, Adjective, Preposition (heads of phrases).\" Minor lexical categories: \"determiner, degree words, Auxiliary, Conjunction.\"",
+                zh: "主要词汇范畴(实词): 名、动、形、介词，作短语的「中心语(head)」。次要词汇范畴(功能词): 限定词、助动词、连词等，作连接或辅助修饰。"
+            },
+            {
+                id: 27,
+                term: "Deep and surface structure",
+                zh_term: "深层结构与表层结构",
+                eng: "Deep structure: \"formed by XP rule...\" Surface structure: \"corresponding to the final syntactic form of the sentence which results from appropriate transformations.\"",
+                zh: "生成语法理论。深层结构: 句子底层的抽象句法表征,决定逻辑基础。表层结构: 深层结构经过「转换规则」后,实际听到的句子外在排列形式。"
+            },
+            {
+                id: 28,
+                term: "Mechanisms of sentence formation",
+                zh_term: "句子生成的句法机制",
+                eng: "Phrase structure rules (composition), Subcategorization (match between heads and complements), Transformations (modify deep structure).",
+                zh: "短语结构规则(规定词类组合)、次范畴化(确保中心语和补足语正确匹配)、转换(透过位移/删除等将深层结构推导为表层结构)。"
+            }
+        ];
+
+        const app = {
+            data: [],
+            currentCardIndex: 0,
+            mode: 'home', // home, swipe, quiz, results
+            swipeStats: { remembered: 0, forgot: 0 },
+            quizStats: { score: 0, total: 0 },
+            currentQuizItem: null,
+            
+            // DOM Elements
+            els: {
+                headerStats: document.getElementById('header-stats'),
+                progressText: document.getElementById('progress-text'),
+                screens: {
+                    home: document.getElementById('screen-home'),
+                    swipe: document.getElementById('screen-swipe'),
+                    quiz: document.getElementById('screen-quiz'),
+                    results: document.getElementById('screen-results'),
+                    knowledge: document.getElementById('screen-knowledge')
+                },
+                cardContainer: document.getElementById('card-container')
+            },
+
+            init() {
+                // Shuffle data copy for operations
+                this.data = [...linguisticsData];
+            },
+
+            showScreen(screenName) {
+                Object.values(this.els.screens).forEach(el => {
+                    el.classList.add('hidden');
+                    el.classList.remove('flex');
+                });
+                
+                const activeScreen = this.els.screens[screenName];
+                activeScreen.classList.remove('hidden');
+                activeScreen.classList.add('flex');
+                
+                this.mode = screenName;
+
+                if (screenName === 'home' || screenName === 'knowledge') {
+                    this.els.headerStats.classList.add('hidden');
+                } else {
+                    this.els.headerStats.classList.remove('hidden');
+                }
+            },
+
+            updateProgress() {
+                if (this.mode === 'swipe') {
+                    this.els.progressText.innerText = `${this.currentCardIndex}/${this.data.length}`;
+                } else if (this.mode === 'quiz') {
+                    this.els.progressText.innerText = `${this.quizStats.total}/${this.data.length}`;
+                }
+            },
+
+            shuffle(array) {
+                let currentIndex = array.length, randomIndex;
+                while (currentIndex !== 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            },
+
+            // --- SWIPE MODE ---
+            startSwipeMode() {
+                this.data = this.shuffle([...linguisticsData]);
+                this.currentCardIndex = 0;
+                this.swipeStats = { remembered: 0, forgot: 0 };
+                this.els.cardContainer.innerHTML = '';
+                this.showScreen('swipe');
+                this.updateProgress();
+                this.renderDeck();
+            },
+
+            renderDeck() {
+                this.els.cardContainer.innerHTML = '';
+                // Render top 3 cards for performance and visual depth
+                const cardsToRender = this.data.slice(this.currentCardIndex, this.currentCardIndex + 3);
+                
+                // Render in reverse order so the first is on top (due to absolute positioning)
+                for (let i = cardsToRender.length - 1; i >= 0; i--) {
+                    const item = cardsToRender[i];
+                    const offsetIndex = i;
+                    const cardEl = this.createCardElement(item, offsetIndex);
+                    this.els.cardContainer.appendChild(cardEl);
+                    
+                    if (offsetIndex === 0) {
+                        this.initDrag(cardEl);
+                    }
+                }
+            },
+
+            createCardElement(item, offsetIndex) {
+                const card = document.createElement('div');
+                card.className = `swipe-card transform-style-3d ${offsetIndex === 0 ? '' : 'pointer-events-none'}`;
+                
+                // Visual depth for cards underneath
+                const scale = 1 - (offsetIndex * 0.05);
+                const translateY = offsetIndex * 15;
+                const opacity = 1 - (offsetIndex * 0.3);
+                card.style.transform = `scale(${scale}) translateY(${translateY}px)`;
+                card.style.opacity = opacity;
+                card.style.zIndex = 100 - offsetIndex;
+
+                card.innerHTML = `
+                    <!-- Stamps -->
+                    <div class="stamp stamp-remember">已记住</div>
+                    <div class="stamp stamp-forgot">没记住</div>
+                    
+                    <!-- Card Inner (for flip) -->
+                    <div class="relative w-full h-full transform-style-3d transition-transform duration-500 card-inner">
+                        <!-- Front of Card (Term) -->
+                        <div class="absolute w-full h-full bg-white rounded-2xl backface-hidden flex flex-col items-center justify-center p-8 text-center border-2 border-gray-100">
+                            <h2 class="text-3xl font-bold text-indigo-900 mb-2">${item.term}</h2>
+                            <h3 class="text-xl text-gray-500">${item.zh_term}</h3>
+                            <div class="absolute bottom-6 text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full"><i class="fa-solid fa-hand-pointer mr-1"></i> 点击翻转释义</div>
+                        </div>
+                        
+                        <!-- Back of Card (Definition) -->
+                        <div class="absolute w-full h-full bg-indigo-50 rounded-2xl backface-hidden rotate-y-180 flex flex-col p-6 border-2 border-indigo-100 overflow-y-auto custom-scrollbar">
+                            <div class="text-center pb-3 border-b border-indigo-200 mb-4">
+                                <span class="font-bold text-indigo-800">${item.term}</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                                <div class="mb-4">
+                                    <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">English Definition</h4>
+                                    <p class="text-gray-800 font-medium italic text-sm leading-relaxed">${item.eng}</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">中文释义</h4>
+                                    <p class="text-gray-700 text-sm leading-relaxed">${item.zh}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Flip logic
+                let isDragging = false;
+                card.addEventListener('mousedown', () => isDragging = false);
+                card.addEventListener('mousemove', () => isDragging = true);
+                card.addEventListener('mouseup', (e) => {
+                    if (!isDragging && offsetIndex === 0) {
+                        this.toggleCardFlip(card);
+                    }
+                });
+                
+                // Touch equivalents for flip
+                let startX, startY;
+                card.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    isDragging = false;
+                }, {passive: true});
+                card.addEventListener('touchmove', (e) => {
+                    const dx = Math.abs(e.touches[0].clientX - startX);
+                    const dy = Math.abs(e.touches[0].clientY - startY);
+                    if (dx > 10 || dy > 10) isDragging = true;
+                }, {passive: true});
+                card.addEventListener('touchend', (e) => {
+                    if (!isDragging && offsetIndex === 0) {
+                        this.toggleCardFlip(card);
+                    }
+                });
+
+                return card;
+            },
+
+            toggleCardFlip(cardElement) {
+                const inner = cardElement.querySelector('.card-inner');
+                if (inner.style.transform === 'rotateY(180deg)') {
+                    inner.style.transform = 'rotateY(0deg)';
+                } else {
+                    inner.style.transform = 'rotateY(180deg)';
+                }
+            },
+
+            flipCurrentCard() {
+                const topCard = this.els.cardContainer.lastElementChild;
+                if(topCard) this.toggleCardFlip(topCard);
+            },
+
+            initDrag(element) {
+                let startX = 0, currentX = 0, currentY = 0, isDragging = false;
+                const windowWidth = window.innerWidth;
+                const threshold = windowWidth * 0.25; // Swipe threshold
+                
+                const stampRemember = element.querySelector('.stamp-remember');
+                const stampForgot = element.querySelector('.stamp-forgot');
+
+                const onDragStart = (e) => {
+                    isDragging = true;
+                    startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                    element.classList.add('dragging');
+                };
+
+                const onDragMove = (e) => {
+                    if (!isDragging) return;
+                    // Prevent scrolling while swiping
+                    if(e.cancelable) e.preventDefault(); 
+                    
+                    const x = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                    currentX = x - startX;
+                    
+                    // Add slight Y movement and rotation
+                    const rotate = currentX * 0.05;
+                    element.style.transform = `translateX(${currentX}px) translateY(${Math.abs(currentX)*0.1}px) rotate(${rotate}deg)`;
+                    
+                    // Show stamps based on direction
+                    // Left swipe: currentX < 0 -> Remembered (Green)
+                    // Right swipe: currentX > 0 -> Forgot (Red)
+                    if (currentX < -20) {
+                        stampRemember.style.opacity = Math.min(Math.abs(currentX) / threshold, 1);
+                        stampForgot.style.opacity = 0;
+                    } else if (currentX > 20) {
+                        stampForgot.style.opacity = Math.min(Math.abs(currentX) / threshold, 1);
+                        stampRemember.style.opacity = 0;
+                    } else {
+                        stampRemember.style.opacity = 0;
+                        stampForgot.style.opacity = 0;
+                    }
+                };
+
+                const onDragEnd = () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    element.classList.remove('dragging');
+                    
+                    if (currentX < -threshold) {
+                        this.swipeCard(element, 'left');
+                    } else if (currentX > threshold) {
+                        this.swipeCard(element, 'right');
+                    } else {
+                        // Reset position
+                        element.style.transform = `translateX(0px) translateY(0px) rotate(0deg)`;
+                        stampRemember.style.opacity = 0;
+                        stampForgot.style.opacity = 0;
+                    }
+                    currentX = 0;
+                };
+
+                // Mouse events
+                element.addEventListener('mousedown', onDragStart);
+                window.addEventListener('mousemove', onDragMove, { passive: false });
+                window.addEventListener('mouseup', onDragEnd);
+                
+                // Touch events
+                element.addEventListener('touchstart', onDragStart, { passive: true });
+                window.addEventListener('touchmove', onDragMove, { passive: false });
+                window.addEventListener('touchend', onDragEnd);
+            },
+
+            manualSwipe(direction) {
+                const topCard = this.els.cardContainer.lastElementChild;
+                if (!topCard) return;
+                this.swipeCard(topCard, direction);
+            },
+
+            swipeCard(element, direction) {
+                const windowWidth = window.innerWidth;
+                const targetX = direction === 'left' ? -windowWidth : windowWidth;
+                const rotate = direction === 'left' ? -30 : 30;
+                
+                element.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease';
+                element.style.transform = `translateX(${targetX}px) translateY(50px) rotate(${rotate}deg)`;
+                element.style.opacity = 0;
+
+                // Record stats (Left = Remembered, Right = Forgot)
+                if (direction === 'left') {
+                    this.swipeStats.remembered++;
+                } else {
+                    this.swipeStats.forgot++;
+                }
+
+                setTimeout(() => {
+                    this.currentCardIndex++;
+                    this.updateProgress();
+                    if (this.currentCardIndex >= this.data.length) {
+                        this.showResults();
+                    } else {
+                        this.renderDeck();
+                    }
+                }, 300);
+            },
+
+            // --- QUIZ MODE ---
+            startQuizMode() {
+                this.data = this.shuffle([...linguisticsData]);
+                this.quizStats = { score: 0, total: 0 };
+                this.showScreen('quiz');
+                this.loadNextQuizQuestion();
+            },
+
+            loadNextQuizQuestion() {
+                if (this.quizStats.total >= this.data.length) {
+                    this.showResults();
+                    return;
+                }
+
+                document.getElementById('quiz-next-btn').classList.add('hidden');
+                document.getElementById('quiz-options').innerHTML = '';
+                
+                this.currentQuizItem = this.data[this.quizStats.total];
+                this.quizStats.total++;
+                this.updateProgress();
+                
+                // Update UI
+                document.getElementById('quiz-q-num').innerText = this.quizStats.total;
+                document.getElementById('quiz-score').innerText = this.quizStats.score;
+                document.getElementById('quiz-question-eng').innerHTML = `<i class="fa-solid fa-quote-left text-indigo-300 mr-2"></i>${this.currentQuizItem.eng}`;
+                document.getElementById('quiz-question-zh').innerHTML = this.currentQuizItem.zh;
+
+                // Generate Options
+                let options = [this.currentQuizItem];
+                let pool = [...linguisticsData].filter(item => item.id !== this.currentQuizItem.id);
+                pool = this.shuffle(pool);
+                
+                // Pick 3 wrong options
+                options.push(pool[0], pool[1], pool[2]);
+                options = this.shuffle(options);
+
+                const optionsContainer = document.getElementById('quiz-options');
+                options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left bg-white border-2 border-gray-100 p-4 rounded-xl shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transition-all font-semibold text-gray-700 flex justify-between items-center group';
+                    btn.innerHTML = `
+                        <span>
+                            <span class="inline-block w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs text-center leading-6 mr-3 group-hover:bg-indigo-200 group-hover:text-indigo-700 transition-colors">${['A','B','C','D'][index]}</span>
+                            ${opt.term} <span class="text-sm font-normal text-gray-500 ml-1">(${opt.zh_term})</span>
+                        </span>
+                        <i class="fa-solid fa-circle-check opacity-0 text-xl"></i>
+                    `;
+                    btn.onclick = () => this.handleQuizAnswer(btn, opt.id === this.currentQuizItem.id, options);
+                    optionsContainer.appendChild(btn);
+                });
+            },
+
+            handleQuizAnswer(selectedBtn, isCorrect, optionsData) {
+                // Disable all buttons
+                const buttons = document.getElementById('quiz-options').querySelectorAll('button');
+                buttons.forEach(btn => btn.onclick = null);
+
+                if (isCorrect) {
+                    this.quizStats.score++;
+                    document.getElementById('quiz-score').innerText = this.quizStats.score;
+                    selectedBtn.classList.add('correct-ans');
+                    selectedBtn.querySelector('i').classList.replace('fa-circle-check', 'fa-check-circle');
+                    selectedBtn.querySelector('i').classList.remove('opacity-0');
+                } else {
+                    selectedBtn.classList.add('wrong-ans');
+                    selectedBtn.querySelector('i').classList.replace('fa-circle-check', 'fa-times-circle');
+                    selectedBtn.querySelector('i').classList.remove('opacity-0');
+                    
+                    // Highlight correct answer
+                    buttons.forEach((btn, idx) => {
+                        if (optionsData[idx].id === this.currentQuizItem.id) {
+                            btn.classList.add('correct-ans');
+                        }
+                    });
+                }
+
+                document.getElementById('quiz-next-btn').classList.remove('hidden');
+            },
+
+            nextQuizQuestion() {
+                this.loadNextQuizQuestion();
+            },
+
+            // --- KNOWLEDGE BASE MODE ---
+            startKnowledgeMode() {
+                this.showScreen('knowledge');
+                this.renderKnowledgeList();
+            },
+
+            renderKnowledgeList() {
+                const listContainer = document.getElementById('knowledge-list');
+                // 仅渲染一次
+                if (listContainer.children.length > 0) return;
+                
+                // 更新标题数量
+                const titleEl = document.getElementById('knowledge-title-count');
+                if(titleEl) titleEl.innerText = `(${linguisticsData.length})`;
+
+                linguisticsData.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-5 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow';
+                    card.innerHTML = `
+                        <div class="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+                            <span class="bg-indigo-100 text-indigo-700 font-bold w-8 h-8 rounded-full flex items-center justify-center text-sm">${index + 1}</span>
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800">${item.term}</h3>
+                                <p class="text-sm text-gray-500">${item.zh_term}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">English</span>
+                                <p class="text-gray-700 font-medium italic text-sm leading-relaxed"><i class="fa-solid fa-quote-left text-gray-300 mr-2"></i>${item.eng}</p>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">中文释义</span>
+                                <p class="text-gray-700 text-sm leading-relaxed">${item.zh}</p>
+                            </div>
+                        </div>
+                    `;
+                    listContainer.appendChild(card);
+                });
+            },
+
+            // --- SHARED ---
+            showResults() {
+                this.els.headerStats.classList.add('hidden');
+                this.showScreen('results');
+                
+                const statsContainer = document.getElementById('results-stats-container');
+                const messageEl = document.getElementById('results-message');
+
+                if (this.mode === 'swipe') {
+                    statsContainer.classList.remove('hidden');
+                    document.getElementById('results-remembered').innerText = this.swipeStats.remembered;
+                    document.getElementById('results-forgot').innerText = this.swipeStats.forgot;
+                    messageEl.innerText = "干得漂亮！复习完成。";
+                } else if (this.mode === 'quiz') {
+                    statsContainer.classList.add('hidden');
+                    const accuracy = Math.round((this.quizStats.score / this.data.length) * 100);
+                    messageEl.innerHTML = `测验结束！<br><br>你的得分是: <strong>${this.quizStats.score} / ${this.data.length}</strong><br>准确率: <strong>${accuracy}%</strong>`;
+                }
+            }
+        };
+
+        // Initialize on load
+        window.onload = () => {
+            app.init();
+        };
+    </script>
+</body>
+</html>
