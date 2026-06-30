@@ -192,6 +192,11 @@
                 </button>
             </div>
             <div class="text-center mt-4 text-xs text-gray-400">提示: 可直接拖拽卡片。左滑记住，右滑没记住。</div>
+            
+            <!-- 返回主页按钮 -->
+            <button onclick="app.showScreen('home')" class="mt-6 px-5 py-2 bg-white/90 border border-gray-200 rounded-full text-gray-600 hover:text-indigo-600 hover:border-indigo-300 text-sm flex items-center gap-2 transition-all shadow-sm z-10">
+                <i class="fa-solid fa-house"></i> 返回主页
+            </button>
         </div>
 
         <!-- Screen 3: Quiz Mode -->
@@ -216,12 +221,21 @@
             <button id="quiz-next-btn" onclick="app.nextQuizQuestion()" class="hidden mt-4 w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow hover:bg-indigo-700 transition-colors">
                 下一题 / Next
             </button>
+            
+            <!-- 返回主页按钮 -->
+            <button onclick="app.showScreen('home')" class="mt-2 w-full bg-transparent border-2 border-gray-200 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors flex justify-center items-center gap-2">
+                <i class="fa-solid fa-house"></i> 返回主页
+            </button>
         </div>
 
         <!-- Screen 5: Knowledge Base -->
         <div id="screen-knowledge" class="hidden w-full max-w-2xl flex-col gap-4 animate-fade-in h-full pb-10 overflow-y-auto custom-scrollbar">
             <div class="sticky top-0 bg-[#f3f4f6]/95 backdrop-blur z-10 py-3 mb-2 flex justify-between items-center">
                 <h2 class="text-xl font-bold text-gray-800 px-2">全部知识点 <span id="knowledge-title-count"></span></h2>
+                <!-- 返回主页按钮 -->
+                <button onclick="app.showScreen('home')" class="mr-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:text-indigo-600 hover:border-indigo-300 text-sm flex items-center gap-2 transition-all shadow-sm">
+                    <i class="fa-solid fa-house"></i> 主页
+                </button>
             </div>
             <div id="knowledge-list" class="flex flex-col gap-4 px-2">
                 <!-- Items injected via JS -->
