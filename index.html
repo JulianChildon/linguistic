@@ -164,6 +164,90 @@
         .drop-zone.wrong { border-color: #ef4444; background: #fee2e2; border-style: solid; }
         .phoneme-tile.correct-tile { border-color: #22c55e; color: #166534; background: transparent; box-shadow: none;}
         .phoneme-tile.wrong-tile { border-color: #ef4444; color: #991b1b; background: transparent; box-shadow: none;}
+        
+        .tree-container {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 2rem;
+            -webkit-overflow-scrolling: touch;
+        }
+        .syntree-wrapper {
+            display: inline-flex;
+            min-width: 100%;
+            justify-content: center;
+            padding: 1rem 1rem 2rem 1rem;
+        }
+        .syntree {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+        .syntree ul {
+            padding-top: 24px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            padding-left: 0;
+            margin: 0;
+        }
+        .syntree li {
+            float: left;
+            text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 24px 6px 0 6px;
+        }
+        .syntree li::before, .syntree li::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 50%;
+            border-top: 1.5px solid #818cf8;
+            width: 50%;
+            height: 24px;
+        }
+        .syntree li::after {
+            right: auto;
+            left: 50%;
+            border-left: 1.5px solid #818cf8;
+        }
+        .syntree li:only-child::after, .syntree li:only-child::before {
+            display: none;
+        }
+        .syntree li:only-child {
+            padding-top: 0;
+        }
+        .syntree li:first-child::before, .syntree li:last-child::after {
+            border: 0 none;
+        }
+        .syntree li:last-child::before {
+            border-right: 1.5px solid #818cf8;
+        }
+        .syntree ul ul::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            border-left: 1.5px solid #818cf8;
+            width: 0;
+            height: 24px;
+            transform: translateX(-50%);
+        }
+        .st-node {
+            display: inline-block;
+            color: #4338ca;
+            font-weight: 700;
+            font-size: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .st-leaf {
+            display: block;
+            color: #16a34a;
+            font-weight: 500;
+            margin-top: 6px;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 <body class="h-screen w-full flex flex-col text-gray-800">
@@ -239,6 +323,17 @@
                 <div>
                     <h3 class="text-xl font-bold text-gray-800 mb-1">辅音表拖拽练习</h3>
                     <p class="text-sm text-gray-500">Manner前三排专属挖空训练，电脑可拖拽，手机点选填空。</p>
+                </div>
+            </button>
+
+            <!-- 句法树图鉴 (New) -->
+            <button onclick="app.startSyntaxTreeMode()" class="group relative overflow-hidden bg-purple-50 p-6 rounded-2xl shadow-lg border border-purple-200 hover:shadow-xl hover:border-purple-400 transition-all text-left flex items-center gap-6">
+                <div class="w-16 h-16 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-sitemap"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">句法树图鉴 (Syntax Trees)</h3>
+                    <p class="text-sm text-gray-500">展示深层/表层结构以及歧义句的不同句法树画法。</p>
                 </div>
             </button>
         </div>
@@ -444,6 +539,32 @@
                 <button onclick="app.submitTableQuiz()" class="w-full bg-teal-600 text-white font-bold py-4 rounded-xl shadow hover:bg-teal-700 transition-colors">
                     提交验证 (Submit)
                 </button>
+            </div>
+        </div>
+
+        <!-- Screen 8: Syntax Trees Mode (New) -->
+        <div id="screen-syntax-trees" class="hidden w-full max-w-5xl flex-col gap-4 animate-fade-in h-full pb-10 overflow-y-auto custom-scrollbar">
+            <div class="sticky top-0 bg-[#f3f4f6]/95 backdrop-blur z-20 py-3 flex justify-between items-center px-2">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-sitemap text-purple-500"></i> 句法树图鉴
+                </h2>
+                <button onclick="app.showScreen('home')" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:text-purple-600 hover:border-purple-300 text-sm flex items-center gap-2 transition-all shadow-sm">
+                    <i class="fa-solid fa-house"></i> 主页
+                </button>
+            </div>
+            
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mx-2 flex justify-between items-center">
+                <button onclick="app.changeSyntaxTree(-1)" id="btn-prev-tree" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 hover:bg-purple-100 hover:text-purple-600 flex justify-center items-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="text-center flex-1 px-4">
+                    <div class="text-xs text-purple-500 font-bold mb-1 uppercase tracking-wider" id="st-counter">Ex 1/7</div>
+                    <h3 class="font-bold text-gray-800 text-lg sm:text-xl" id="st-title">Title</h3>
+                    <p class="text-xs text-gray-500 mt-1" id="st-desc">Desc</p>
+                </div>
+                <button onclick="app.changeSyntaxTree(1)" id="btn-next-tree" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 hover:bg-purple-100 hover:text-purple-600 flex justify-center items-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <div id="st-trees-container" class="px-2 flex flex-col gap-4">
+                <!-- Trees Injected via JS -->
             </div>
         </div>
 
@@ -695,14 +816,116 @@
             }
         ];
 
+        const syntaxTreesData = [
+            {
+                title: "1. The essay that he wrote was excellent.",
+                desc: "展示 Wh-Movement (关系代词) 从深层结构 (Deep) 到表层结构 (Surface) 的移位过程。",
+                trees: [
+                    {
+                        label: "Deep Structure (深层结构)",
+                        root: { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "The" }, { n: "N", l: "essay" }] }, { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "he" }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "write" }, { n: "NP", c: [{ n: "N", l: "that" }] }] }] }] }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "be" }, { n: "Adj", l: "excellent" }] }] }] }
+                    },
+                    {
+                        label: "Surface Structure (表层结构)",
+                        root: { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "The" }, { n: "N", l: "essay" }] }, { n: "CP", c: [{ n: "NP", c: [{ n: "N", l: "that" }] }, { n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "he" }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "write" }, { n: "NP", c: [{ n: "N", l: "e" }] }] }] }] }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "be" }, { n: "Adj", l: "excellent" }] }] }] }
+                    }
+                ]
+            },
+            {
+                title: "2. Herbert bought a house that she loved.",
+                desc: "关系代词 that 的 Wh-Movement 移位分析。",
+                trees: [
+                    {
+                        label: "Deep Structure (深层结构)",
+                        root: { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "Herbert" }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "buy" }, { n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "a" }, { n: "N", l: "house" }] }, { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "she" }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "love" }, { n: "NP", c: [{ n: "N", l: "that" }] }] }] }] }] }] }] }] }
+                    },
+                    {
+                        label: "Surface Structure (表层结构)",
+                        root: { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "Herbert" }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "buy" }, { n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "a" }, { n: "N", l: "house" }] }, { n: "CP", c: [{ n: "NP", c: [{ n: "N", l: "that" }] }, { n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "she" }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "love" }, { n: "NP", c: [{ n: "N", l: "e" }] }] }] }] }] }] }] }] }
+                    }
+                ]
+            },
+            {
+                title: "3. The girl whom he adores majors in linguistics.",
+                desc: "关系代词 whom 作为宾语被移位到关系从句句首。",
+                trees: [
+                    {
+                        label: "Deep Structure (深层结构)",
+                        root: { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "The" }, { n: "N", l: "girl" }] }, { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "he" }] }, { n: "Infl", l: "NonPst" }, { n: "VP", c: [{ n: "V", l: "adore" }, { n: "NP", c: [{ n: "N", l: "whom" }] }] }] }] }] }, { n: "Infl", l: "NonPst" }, { n: "VP", c: [{ n: "V", l: "major" }, { n: "PP", c: [{ n: "P", l: "in" }, { n: "NP", c: [{ n: "N", l: "linguistics" }] }] }] }] }] }
+                    },
+                    {
+                        label: "Surface Structure (表层结构)",
+                        root: { n: "CP", c: [{ n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "The" }, { n: "N", l: "girl" }] }, { n: "CP", c: [{ n: "NP", c: [{ n: "N", l: "whom" }] }, { n: "C" }, { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "he" }] }, { n: "Infl", l: "NonPst" }, { n: "VP", c: [{ n: "V", l: "adore" }, { n: "NP", c: [{ n: "N", l: "e" }] }] }] }] }] }, { n: "Infl", l: "NonPst" }, { n: "VP", c: [{ n: "V", l: "major" }, { n: "PP", c: [{ n: "P", l: "in" }, { n: "NP", c: [{ n: "N", l: "linguistics" }] }] }] }] }] }
+                    }
+                ]
+            },
+            {
+                title: "4. Times flies like an arrow.",
+                desc: "词性歧义导致的句法结构不同 (Structural Ambiguity)。",
+                trees: [
+                    {
+                        label: "解析 1: Times(主语) + flies(动词)",
+                        root: { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "Times" }] }, { n: "Infl", l: "NonPst" }, { n: "VP", c: [{ n: "V", l: "fly" }, { n: "PP", c: [{ n: "P", l: "like" }, { n: "NP", c: [{ n: "Det", l: "an" }, { n: "N", l: "arrow" }] }] }] }] }
+                    },
+                    {
+                        label: "解析 2: Times flies(名词短语) + like(动词)",
+                        root: { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "Times" }, { n: "N", l: "flies" }] }, { n: "Infl", l: "NonPst" }, { n: "VP", c: [{ n: "V", l: "like" }, { n: "NP", c: [{ n: "Det", l: "an" }, { n: "N", l: "arrow" }] }] }] }
+                    }
+                ]
+            },
+            {
+                title: "5. The mother of the boy and the girl will arrive soon.",
+                desc: "并列结构 (and) 的组合范围不同导致的歧义。",
+                trees: [
+                    {
+                        label: "解析 1: mother of [boy and girl]",
+                        root: { n: "S", c: [{ n: "NP", c: [{ n: "Det", l: "The" }, { n: "N", l: "mother" }, { n: "PP", c: [{ n: "P", l: "of" }, { n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "the" }, { n: "N", l: "boy" }] }, { n: "Conj", l: "and" }, { n: "NP", c: [{ n: "Det", l: "the" }, { n: "N", l: "girl" }] }] }] }] }, { n: "Infl", l: "will" }, { n: "VP", c: [{ n: "V", l: "arrive" }, { n: "AdvP", c: [{ n: "Adv", l: "soon" }] }] }] }
+                    },
+                    {
+                        label: "解析 2: [mother of boy] and [girl]",
+                        root: { n: "S", c: [{ n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "The" }, { n: "N", l: "mother" }, { n: "PP", c: [{ n: "P", l: "of" }, { n: "NP", c: [{ n: "Det", l: "the" }, { n: "N", l: "boy" }] }] }] }, { n: "Conj", l: "and" }, { n: "NP", c: [{ n: "Det", l: "the" }, { n: "N", l: "girl" }] }] }, { n: "Infl", l: "will" }, { n: "VP", c: [{ n: "V", l: "arrive" }, { n: "AdvP", c: [{ n: "Adv", l: "soon" }] }] }] }
+                    }
+                ]
+            },
+            {
+                title: "6. Old men and women will be served first.",
+                desc: "形容词 (Old) 的修饰范围引起的结构歧义。",
+                trees: [
+                    {
+                        label: "解析 1: Old [men and women]",
+                        root: { n: "S", c: [{ n: "NP", c: [{ n: "Adj", l: "Old" }, { n: "NP", c: [{ n: "N", l: "men" }, { n: "Conj", l: "and" }, { n: "N", l: "women" }] }] }, { n: "Infl", l: "will" }, { n: "VP", c: [{ n: "Aux", l: "be" }, { n: "V", l: "served" }, { n: "AdvP", c: [{ n: "Adv", l: "first" }] }] }] }
+                    },
+                    {
+                        label: "解析 2: [Old men] and women",
+                        root: { n: "S", c: [{ n: "NP", c: [{ n: "NP", c: [{ n: "Adj", l: "Old" }, { n: "N", l: "men" }] }, { n: "Conj", l: "and" }, { n: "NP", c: [{ n: "N", l: "women" }] }] }, { n: "Infl", l: "will" }, { n: "VP", c: [{ n: "Aux", l: "be" }, { n: "V", l: "served" }, { n: "AdvP", c: [{ n: "Adv", l: "first" }] }] }] }
+                    }
+                ]
+            },
+            {
+                title: "7. John passed the hammer and saw through the window.",
+                desc: "词性歧义与并列结构双重歧义 (saw 作为动词还是名词)。",
+                trees: [
+                    {
+                        label: "解析 1: saw 为动词 (John passed... and saw...)",
+                        root: { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "John" }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "VP", c: [{ n: "V", l: "pass" }, { n: "NP", c: [{ n: "Det", l: "the" }, { n: "N", l: "hammer" }] }] }, { n: "Conj", l: "and" }, { n: "VP", c: [{ n: "V", l: "see" }, { n: "PP", c: [{ n: "P", l: "through" }, { n: "NP", c: [{ n: "Det", l: "the" }, { n: "N", l: "window" }] }] }] }] }] }
+                    },
+                    {
+                        label: "解析 2: saw 为名词 (passed the [hammer and saw])",
+                        root: { n: "S", c: [{ n: "NP", c: [{ n: "N", l: "John" }] }, { n: "Infl", l: "Pst" }, { n: "VP", c: [{ n: "V", l: "pass" }, { n: "NP", c: [{ n: "NP", c: [{ n: "Det", l: "the" }, { n: "N", l: "hammer" }] }, { n: "Conj", l: "and" }, { n: "N", l: "saw" }] }, { n: "PP", c: [{ n: "P", l: "through" }, { n: "NP", c: [{ n: "Det", l: "the" }, { n: "window" }] }] }] }] } // Minor fix to ensure window has N leaf
+                    }
+                ]
+            }
+        ];
+
         const app = {
             data: [],
             currentCardIndex: 0,
-            mode: 'home', // home, swipe, quiz, results, tableQuiz
+            mode: 'home', // home, swipe, quiz, results, tableQuiz, syntaxTrees
             swipeStats: { remembered: 0, forgot: 0 },
             quizStats: { score: 0, total: 0 },
             currentQuizItem: null,
             tableQuizState: { selectedTile: null },
+            syntaxTreeState: { currentIndex: 0 },
             
             // DOM Elements
             els: {
@@ -715,7 +938,8 @@
                     results: document.getElementById('screen-results'),
                     knowledge: document.getElementById('screen-knowledge'),
                     keyKnowledge: document.getElementById('screen-key-knowledge'),
-                    tableQuiz: document.getElementById('screen-table-quiz')
+                    tableQuiz: document.getElementById('screen-table-quiz'),
+                    syntaxTrees: document.getElementById('screen-syntax-trees')
                 },
                 cardContainer: document.getElementById('card-container')
             },
@@ -737,7 +961,7 @@
                 
                 this.mode = screenName;
 
-                if (screenName === 'home' || screenName === 'knowledge' || screenName === 'keyKnowledge' || screenName === 'tableQuiz') {
+                if (screenName === 'home' || screenName === 'knowledge' || screenName === 'keyKnowledge' || screenName === 'tableQuiz' || screenName === 'syntaxTrees') {
                     this.els.headerStats.classList.add('hidden');
                 } else {
                     this.els.headerStats.classList.remove('hidden');
@@ -1346,6 +1570,74 @@
                 } else {
                     // Optional: Visual shake effect for wrong ones could be added here
                 }
+            },
+
+            startSyntaxTreeMode() {
+                this.showScreen('syntaxTrees');
+                this.syntaxTreeState.currentIndex = 0;
+                this.renderSyntaxTree();
+            },
+
+            changeSyntaxTree(delta) {
+                let newIndex = this.syntaxTreeState.currentIndex + delta;
+                if (newIndex >= 0 && newIndex < syntaxTreesData.length) {
+                    this.syntaxTreeState.currentIndex = newIndex;
+                    this.renderSyntaxTree();
+                }
+            },
+
+            buildTreeHTML(node) {
+                if (!node) return '';
+                let html = `<li><span class="st-node">${node.n}</span>`;
+                if (node.l) {
+                    html += `<span class="st-leaf">${node.l}</span>`;
+                }
+                if (node.c && node.c.length > 0) {
+                    html += `<ul>`;
+                    node.c.forEach(child => {
+                        html += this.buildTreeHTML(child);
+                    });
+                    html += `</ul>`;
+                }
+                html += `</li>`;
+                return html;
+            },
+
+            renderSyntaxTree() {
+                const data = syntaxTreesData[this.syntaxTreeState.currentIndex];
+                
+                document.getElementById('st-counter').innerText = `Ex ${this.syntaxTreeState.currentIndex + 1}/${syntaxTreesData.length}`;
+                document.getElementById('st-title').innerText = data.title;
+                document.getElementById('st-desc').innerText = data.desc;
+
+                document.getElementById('btn-prev-tree').disabled = this.syntaxTreeState.currentIndex === 0;
+                document.getElementById('btn-next-tree').disabled = this.syntaxTreeState.currentIndex === syntaxTreesData.length - 1;
+
+                const container = document.getElementById('st-trees-container');
+                container.innerHTML = '';
+
+                data.trees.forEach(tree => {
+                    const block = document.createElement('div');
+                    block.className = 'bg-white rounded-2xl shadow-sm border-2 border-purple-100 overflow-hidden';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'bg-purple-50 text-purple-900 font-bold px-4 py-2 border-b-2 border-purple-100 text-sm';
+                    header.innerText = tree.label;
+                    
+                    const treeWrapper = document.createElement('div');
+                    treeWrapper.className = 'tree-container';
+                    
+                    const innerWrap = document.createElement('div');
+                    innerWrap.className = 'syntree-wrapper';
+                    
+                    const treeHtml = `<ul class="syntree">${this.buildTreeHTML(tree.root)}</ul>`;
+                    innerWrap.innerHTML = treeHtml;
+                    
+                    treeWrapper.appendChild(innerWrap);
+                    block.appendChild(header);
+                    block.appendChild(treeWrapper);
+                    container.appendChild(block);
+                });
             },
 
             // --- SHARED ---
