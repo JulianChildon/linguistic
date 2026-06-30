@@ -118,6 +118,52 @@
         
         .correct-ans { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #166534 !important;}
         .wrong-ans { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important;}
+        
+        /* Table Quiz Styles */
+        .phoneme-tile {
+            width: 36px;
+            height: 36px;
+            background: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #334155;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            touch-action: manipulation;
+        }
+        .phoneme-tile:active { cursor: grabbing; }
+        .phoneme-tile.selected { 
+            border-color: #6366f1; 
+            box-shadow: 0 0 0 4px rgba(99,102,241,0.2); 
+            transform: scale(1.15) translateY(-2px); 
+            z-index: 10; 
+            color: #4f46e5;
+        }
+        .drop-zone {
+            width: 100%;
+            min-width: 44px;
+            height: 44px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .drop-zone.drag-over { border-color: #6366f1; background: #e0e7ff; }
+        .drop-zone.correct { border-color: #22c55e; background: #dcfce7; border-style: solid; }
+        .drop-zone.wrong { border-color: #ef4444; background: #fee2e2; border-style: solid; }
+        .phoneme-tile.correct-tile { border-color: #22c55e; color: #166534; background: transparent; box-shadow: none;}
+        .phoneme-tile.wrong-tile { border-color: #ef4444; color: #991b1b; background: transparent; box-shadow: none;}
     </style>
 </head>
 <body class="h-screen w-full flex flex-col text-gray-800">
@@ -170,6 +216,29 @@
                 <div>
                     <h3 class="text-xl font-bold text-gray-800 mb-1">知识库 (Knowledge Base)</h3>
                     <p class="text-sm text-gray-500">直接浏览所有词汇的英文原句与中文释义。</p>
+                </div>
+            </button>
+
+            <!-- 重点知识库入口 (New) -->
+            <button onclick="app.startKeyKnowledgeMode()" class="group relative overflow-hidden bg-amber-50 p-6 rounded-2xl shadow-lg border border-amber-200 hover:shadow-xl hover:border-amber-400 transition-all text-left flex items-center gap-6">
+                <div class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg shadow-sm z-10">大考必背</div>
+                <div class="w-16 h-16 rounded-full bg-amber-200 text-amber-700 flex items-center justify-center text-3xl group-hover:scale-110 group-hover:rotate-12 transition-transform">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">重点知识库 (Key Concepts)</h3>
+                    <p class="text-sm text-gray-500">根据老师划线重点整理，按章节分类排列。</p>
+                </div>
+            </button>
+
+            <!-- 辅音表拖拽练习 (New) -->
+            <button onclick="app.startTableQuizMode()" class="group relative overflow-hidden bg-teal-50 p-6 rounded-2xl shadow-lg border border-teal-200 hover:shadow-xl hover:border-teal-400 transition-all text-left flex items-center gap-6">
+                <div class="w-16 h-16 rounded-full bg-teal-200 text-teal-700 flex items-center justify-center text-3xl group-hover:scale-110 group-hover:-rotate-12 transition-transform">
+                    <i class="fa-solid fa-table-cells"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">辅音表拖拽练习</h3>
+                    <p class="text-sm text-gray-500">Manner前三排专属挖空训练，电脑可拖拽，手机点选填空。</p>
                 </div>
             </button>
         </div>
@@ -239,6 +308,142 @@
             </div>
             <div id="knowledge-list" class="flex flex-col gap-4 px-2">
                 <!-- Items injected via JS -->
+            </div>
+        </div>
+
+        <!-- Screen 6: Key Knowledge Base (New) -->
+        <div id="screen-key-knowledge" class="hidden w-full max-w-2xl flex-col gap-4 animate-fade-in h-full pb-10 overflow-y-auto custom-scrollbar">
+            <div class="sticky top-0 bg-[#f3f4f6]/95 backdrop-blur z-10 py-3 mb-2 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800 px-2 flex items-center gap-2">
+                    <i class="fa-solid fa-star text-amber-500"></i> 重点知识库
+                </h2>
+                <!-- 返回主页按钮 -->
+                <button onclick="app.showScreen('home')" class="mr-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:text-indigo-600 hover:border-indigo-300 text-sm flex items-center gap-2 transition-all shadow-sm">
+                    <i class="fa-solid fa-house"></i> 主页
+                </button>
+            </div>
+            <div id="key-knowledge-list" class="flex flex-col gap-2 px-2">
+                <!-- Items injected via JS -->
+            </div>
+        </div>
+
+        <!-- Screen 7: Table Quiz Mode (New) -->
+        <div id="screen-table-quiz" class="hidden w-full max-w-4xl flex-col gap-4 animate-fade-in h-full pb-10 overflow-y-auto custom-scrollbar">
+            <div class="sticky top-0 bg-[#f3f4f6]/95 backdrop-blur z-20 py-3 flex justify-between items-center px-2">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-table-cells text-teal-500"></i> 辅音表填空
+                </h2>
+                <button onclick="app.showScreen('home')" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:text-teal-600 hover:border-teal-300 text-sm flex items-center gap-2 transition-all shadow-sm">
+                    <i class="fa-solid fa-house"></i> 主页
+                </button>
+            </div>
+            
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mx-2 text-sm text-indigo-700 text-center shadow-sm">
+                <i class="fa-solid fa-lightbulb mr-1"></i> <strong>电脑端：</strong>直接拖拽音标进入虚线框。 <br class="sm:hidden"><strong>手机端：</strong>先点击选中下方音标，再点击虚线框放置。
+            </div>
+
+            <!-- Phoneme Bank (Draggable items container) -->
+            <div class="px-2">
+                <div class="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-inner min-h-[80px]">
+                    <div id="phoneme-bank" class="flex flex-wrap justify-center gap-3">
+                        <!-- Tiles injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Table -->
+            <div class="px-2">
+                <div class="overflow-x-auto bg-white rounded-2xl shadow-sm border-2 border-teal-100">
+                    <table class="w-full min-w-[650px] text-center border-collapse text-sm">
+                        <thead class="bg-teal-50 font-bold text-teal-900 border-b-2 border-teal-200">
+                            <tr>
+                                <th class="p-2 border-r border-teal-100">Manner</th>
+                                <th class="p-2 border-r border-teal-100">VL/VD</th>
+                                <th class="p-2 border-r border-teal-100">Bilabial</th>
+                                <th class="p-2 border-r border-teal-100">Labio-dental</th>
+                                <th class="p-2 border-r border-teal-100">Dental</th>
+                                <th class="p-2 border-r border-teal-100">Alveolar</th>
+                                <th class="p-2 border-r border-teal-100">Palatal</th>
+                                <th class="p-2 border-r border-teal-100">Velar</th>
+                                <th class="p-2">Glottal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-700">
+                            <!-- Stops -->
+                            <tr class="border-b border-gray-100">
+                                <td rowspan="2" class="p-2 font-bold border-r border-gray-100">Stops</td>
+                                <td class="p-2 text-gray-400 border-r border-gray-100">VL</td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="p" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="t" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="k" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 bg-gray-50/50"></td>
+                            </tr>
+                            <tr class="border-b border-teal-100">
+                                <td class="p-2 text-gray-500 font-medium border-r border-gray-100">VD</td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="b" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="d" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="g" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 bg-gray-50/50"></td>
+                            </tr>
+                            <!-- Fricatives -->
+                            <tr class="border-b border-gray-100">
+                                <td rowspan="2" class="p-2 font-bold border-r border-gray-100">Fricatives</td>
+                                <td class="p-2 text-gray-400 border-r border-gray-100">VL</td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="f" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="θ" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="s" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="ʃ" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1"><div class="drop-zone mx-auto" data-answer="h" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                            </tr>
+                            <tr class="border-b border-teal-100">
+                                <td class="p-2 text-gray-500 font-medium border-r border-gray-100">VD</td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="v" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="ð" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="z" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="ʒ" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 bg-gray-50/50"></td>
+                            </tr>
+                            <!-- Affricates -->
+                            <tr class="border-b border-gray-100">
+                                <td rowspan="2" class="p-2 font-bold border-r border-gray-100">Affricates</td>
+                                <td class="p-2 text-gray-400 border-r border-gray-100">VL</td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="(tʃ)" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="tʃ" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 bg-gray-50/50"></td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 text-gray-500 font-medium border-r border-gray-100">VD</td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="(dʒ)" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-1 border-r border-gray-100"><div class="drop-zone mx-auto" data-answer="dʒ" onclick="app.clickZone(this)" ondragover="app.handleDragOver(event)" ondragleave="app.handleDragLeave(event)" ondrop="app.handleDrop(event, this)"></div></td>
+                                <td class="p-2 border-r border-gray-100 bg-gray-50/50"></td>
+                                <td class="p-2 bg-gray-50/50"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="px-2 mt-4 flex flex-col gap-3">
+                <button onclick="app.submitTableQuiz()" class="w-full bg-teal-600 text-white font-bold py-4 rounded-xl shadow hover:bg-teal-700 transition-colors">
+                    提交验证 (Submit)
+                </button>
             </div>
         </div>
 
@@ -338,8 +543,8 @@
                 id: 10,
                 term: "Vowel Classifications",
                 zh_term: "元音的分类基准",
-                eng: "According to \"the openness of the mouth\", vowels are classified into: \"close, semi-close, semi-open, and open vowels\".",
-                zh: "根据发音时「口腔的开合度」(即舌位高低)分类。包含：闭元音(Close)、半闭/半开元音(Semi-close/open)、开元音(Open)。"
+                eng: "Vowels are classified according to four criteria: 1) \"which part of the tongue is held highest\" (front, central, back); 2) \"the openness of the mouth\" (close, semi-close, semi-open, open); 3) \"the shape of the lips\" (unrounded, rounded); 4) \"the length of the sound\" (long/short, tense/lax).",
+                zh: "根据教材，英语元音的分类有四个核心基准：1) 舌位前后/舌头最高的部分 (前、中、后元音)；2) 口腔的开合度/舌位高低 (闭、半闭、半开、开元音)；3) 嘴唇的形状 (不圆唇与圆唇)；4) 声音的长度 (长元音与短元音，或称紧/松元音)。"
             },
             {
                 id: 11,
@@ -401,8 +606,8 @@
                 id: 19,
                 term: "Open class and closed class words",
                 zh_term: "开放类词与封闭类词",
-                eng: "Open class: \"content words... new words can be added.\" Closed class: \"grammatical or functional words... few new words are added.\"",
-                zh: "开放类(实词): 名词、动词、形容词等,有实质意义,可不断创造新词。封闭类(虚词/功能词): 连词、介词、代词等,发挥语法功能,数量有限且稳定。"
+                eng: "Open class words (content words): \"nouns, verbs, adjectives and adverbs... since new words can be added.\"<br><br>Closed class words (functional words): \"Conjunctions, prepositions, articles and pronouns... since few new words are added.\"",
+                zh: "• 开放类(实词): 包含名词(nouns)、动词(verbs)、形容词(adjectives)和副词(adverbs)。它们有实质意义，可不断创造新词。<br><br>• 封闭类(虚词/功能词): 包含连词(conjunctions)、介词(prepositions)、冠词(articles)和代词(pronouns)。它们主要发挥语法功能，数量有限且极少增加新词。"
             },
             {
                 id: 20,
@@ -450,8 +655,8 @@
                 id: 26,
                 term: "Word-level categories",
                 zh_term: "词级范畴/词类",
-                eng: "Major lexical categories: \"Noun, Verb, Adjective, Preposition (heads of phrases).\" Minor lexical categories: \"determiner, degree words, Auxiliary, Conjunction.\"",
-                zh: "主要词汇范畴(实词): 名、动、形、介词，作短语的「中心语(head)」。次要词汇范畴(功能词): 限定词、助动词、连词等，作连接或辅助修饰。"
+                eng: "<strong>Major lexical categories:</strong> \"...often assumed to be the heads around which phrases are built.\" Includes: Noun (N), Verb (V), Adjective (A), and Preposition (P).<br><br><strong>Minor lexical categories:</strong> Functional categories. Includes: Determiner (Det), Degree words (Deg), Qualifier (Qual), Auxiliary (Aux), and Conjunction (Con).",
+                zh: "<strong>• 主要词汇范畴 (Major lexical categories):</strong> 在构句中起重要作用，通常作为构建短语的中心语(heads)。包含：名词(Noun)、动词(Verb)、形容词(Adjective)、介词(Preposition)。<br><br><strong>• 次要词汇范畴 (Minor lexical categories):</strong> 属于功能范畴。包含：限定词(Determiner)、程度词(Degree words)、限定语(Qualifier)、助动词(Auxiliary)、连词(Conjunction)。"
             },
             {
                 id: 27,
@@ -466,16 +671,38 @@
                 zh_term: "句子生成的句法机制",
                 eng: "Phrase structure rules (composition), Subcategorization (match between heads and complements), Transformations (modify deep structure).",
                 zh: "短语结构规则(规定词类组合)、次范畴化(确保中心语和补足语正确匹配)、转换(透过位移/删除等将深层结构推导为表层结构)。"
+            },
+            {
+                id: 29,
+                term: "Wh Movement",
+                zh_term: "Wh-移位",
+                eng: "\"To convert these deep structures into the corresponding surface structures, we need a transformation that will move the wh phrase from its position in deep structure to a position at the beginning of the sentence.\"",
+                zh: "一种句法转换规则。为了将深层结构转换为相应的表层结构，需要通过转换将 wh-短语（如 what, who 等疑问词）从其在深层结构中的逻辑原始位置，移动到句首位置。这展示了深层结构与表层结构的对应转换关系。"
+            },
+            {
+                id: 30,
+                term: "Design features of language",
+                zh_term: "语言的设计特征",
+                eng: "\"Design features refer to the defining properties of human language that distinguish it from any animal system of communication.\"",
+                zh: "设计特征指的是人类语言特有的决定性属性，正是这些核心属性将人类语言与任何动物的交流系统严格区分开来。（该理论框架由美国语言学家查尔斯·霍凯特 Charles Hockett 于1960年提出）"
+            },
+            {
+                id: 31,
+                term: "English Consonants Classification",
+                zh_term: "英语辅音分类表",
+                eng: "\"Consonants can be classified by place of articulation, manner of articulation, and voicing (VL = Voiceless, VD = Voiced).\"",
+                zh: "英语辅音根据<strong>发音部位 (Place of articulation)</strong>、<strong>发音方法 (Manner of articulation)</strong>以及<strong>声带振动 (Voicing: VL清音/VD浊音)</strong>分类。此表为大考核心考点，要求能根据特征写出音标：<br><div class='overflow-x-auto mt-3 pb-2'><table class='w-full text-[11px] sm:text-xs text-center border-collapse border border-amber-300 bg-white shadow-sm'><thead><tr class='bg-amber-50 font-bold text-amber-900'><th class='border border-amber-200 p-1 sm:p-2'>Manner</th><th class='border border-amber-200 p-1 sm:p-2' title='Voiceless/Voiced'>VL/VD</th><th class='border border-amber-200 p-1 sm:p-2'>Bilabial</th><th class='border border-amber-200 p-1 sm:p-2'>Labio-dental</th><th class='border border-amber-200 p-1 sm:p-2'>Dental</th><th class='border border-amber-200 p-1 sm:p-2'>Alveolar</th><th class='border border-amber-200 p-1 sm:p-2'>Palatal</th><th class='border border-amber-200 p-1 sm:p-2'>Velar</th><th class='border border-amber-200 p-1 sm:p-2'>Glottal</th></tr></thead><tbody class='text-gray-700'><tr><td rowspan='2' class='border border-amber-200 p-1 font-bold'>Stops</td><td class='border border-amber-200 p-1 text-gray-400'>VL</td><td class='border border-amber-200 p-1 font-semibold'>p</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>t</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>k</td><td class='border border-amber-200 p-1'></td></tr><tr><td class='border border-amber-200 p-1 text-gray-500 font-medium'>VD</td><td class='border border-amber-200 p-1 font-semibold'>b</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>d</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>g</td><td class='border border-amber-200 p-1'></td></tr><tr><td rowspan='2' class='border border-amber-200 p-1 font-bold'>Fricatives</td><td class='border border-amber-200 p-1 text-gray-400'>VL</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>f</td><td class='border border-amber-200 p-1 font-semibold'>θ</td><td class='border border-amber-200 p-1 font-semibold'>s</td><td class='border border-amber-200 p-1 font-semibold'>ʃ</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>h</td></tr><tr><td class='border border-amber-200 p-1 text-gray-500 font-medium'>VD</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>v</td><td class='border border-amber-200 p-1 font-semibold'>ð</td><td class='border border-amber-200 p-1 font-semibold'>z</td><td class='border border-amber-200 p-1 font-semibold'>ʒ</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td></tr><tr><td rowspan='2' class='border border-amber-200 p-1 font-bold'>Affricates</td><td class='border border-amber-200 p-1 text-gray-400'>VL</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold text-gray-400'>(tʃ)</td><td class='border border-amber-200 p-1 font-semibold'>tʃ</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td></tr><tr><td class='border border-amber-200 p-1 text-gray-500 font-medium'>VD</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold text-gray-400'>(dʒ)</td><td class='border border-amber-200 p-1 font-semibold'>dʒ</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td></tr><tr class='border-t-2 border-t-red-400'><td class='border border-amber-200 p-1 font-bold'>Nasals</td><td class='border border-amber-200 p-1 text-gray-500 font-medium'>VD</td><td class='border border-amber-200 p-1 font-semibold'>m</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>n</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>ŋ</td><td class='border border-amber-200 p-1'></td></tr><tr><td class='border border-amber-200 p-1 font-bold'>Liquids</td><td class='border border-amber-200 p-1 text-gray-500 font-medium'>VD</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>l, r</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td></tr><tr><td class='border border-amber-200 p-1 font-bold'>Glides</td><td class='border border-amber-200 p-1 text-gray-500 font-medium'>VD</td><td class='border border-amber-200 p-1 font-semibold'>w</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1 font-semibold'>j</td><td class='border border-amber-200 p-1'></td><td class='border border-amber-200 p-1'></td></tr></tbody></table></div>"
             }
         ];
 
         const app = {
             data: [],
             currentCardIndex: 0,
-            mode: 'home', // home, swipe, quiz, results
+            mode: 'home', // home, swipe, quiz, results, tableQuiz
             swipeStats: { remembered: 0, forgot: 0 },
             quizStats: { score: 0, total: 0 },
             currentQuizItem: null,
+            tableQuizState: { selectedTile: null },
             
             // DOM Elements
             els: {
@@ -486,7 +713,9 @@
                     swipe: document.getElementById('screen-swipe'),
                     quiz: document.getElementById('screen-quiz'),
                     results: document.getElementById('screen-results'),
-                    knowledge: document.getElementById('screen-knowledge')
+                    knowledge: document.getElementById('screen-knowledge'),
+                    keyKnowledge: document.getElementById('screen-key-knowledge'),
+                    tableQuiz: document.getElementById('screen-table-quiz')
                 },
                 cardContainer: document.getElementById('card-container')
             },
@@ -508,7 +737,7 @@
                 
                 this.mode = screenName;
 
-                if (screenName === 'home' || screenName === 'knowledge') {
+                if (screenName === 'home' || screenName === 'knowledge' || screenName === 'keyKnowledge' || screenName === 'tableQuiz') {
                     this.els.headerStats.classList.add('hidden');
                 } else {
                     this.els.headerStats.classList.remove('hidden');
@@ -877,6 +1106,246 @@
                     `;
                     listContainer.appendChild(card);
                 });
+            },
+
+            // --- KEY KNOWLEDGE BASE MODE ---
+            startKeyKnowledgeMode() {
+                this.showScreen('keyKnowledge');
+                this.renderKeyKnowledgeList();
+            },
+
+            renderKeyKnowledgeList() {
+                const listContainer = document.getElementById('key-knowledge-list');
+                if (listContainer.children.length > 0) return;
+
+                // 提取图片中划线的重点，按章节分类
+                const keyChapters = [
+                    { title: "Chapter 1: Introduction (引论)", ids: [1, 30, 5, 6] },
+                    { title: "Chapter 2: Phonology (音系学)", ids: [10, 12, 31] },
+                    { title: "Chapter 3: Morphology (形态学)", ids: [19, 24] },
+                    { title: "Chapter 4: Syntax (句法学)", ids: [26, 27, 29] }
+                ];
+
+                keyChapters.forEach(chapter => {
+                    // 生成章节标题
+                    const header = document.createElement('h3');
+                    header.className = 'text-lg font-extrabold text-amber-800 mt-5 mb-2 border-l-4 border-amber-500 pl-3';
+                    header.innerText = chapter.title;
+                    listContainer.appendChild(header);
+
+                    // 注入章节所属的考点卡片
+                    chapter.ids.forEach(id => {
+                        const item = linguisticsData.find(d => d.id === id);
+                        if (!item) return;
+
+                        const card = document.createElement('div');
+                        card.className = 'bg-white p-5 rounded-2xl shadow-sm border-2 border-amber-100 hover:shadow-md hover:border-amber-300 transition-all relative overflow-hidden mb-3';
+                        card.innerHTML = `
+                            <div class="absolute -right-4 -top-4 text-amber-500 opacity-10 text-7xl transform rotate-12">
+                                <i class="fa-solid fa-star"></i>
+                            </div>
+                            <div class="flex items-center gap-3 mb-3 pb-3 border-b border-amber-50 relative z-10">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                        ${item.term}
+                                        <span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-wider shadow-sm">考点</span>
+                                    </h3>
+                                    <p class="text-sm text-gray-500">${item.zh_term}</p>
+                                </div>
+                            </div>
+                            <div class="space-y-3 relative z-10">
+                                <div>
+                                    <span class="text-xs font-bold text-amber-600 uppercase tracking-wider block mb-1">English</span>
+                                    <p class="text-gray-700 font-medium italic text-sm leading-relaxed"><i class="fa-solid fa-quote-left text-amber-200 mr-2"></i>${item.eng}</p>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-amber-600 uppercase tracking-wider block mb-1">中文释义</span>
+                                    <p class="text-gray-700 text-sm leading-relaxed">${item.zh}</p>
+                                </div>
+                            </div>
+                        `;
+                        listContainer.appendChild(card);
+                    });
+                });
+            },
+
+            // --- TABLE QUIZ MODE (DRAG & DROP) ---
+            startTableQuizMode() {
+                this.showScreen('tableQuiz');
+                this.initTableQuiz();
+            },
+
+            initTableQuiz() {
+                this.tableQuizState.selectedTile = null;
+                const bank = document.getElementById('phoneme-bank');
+                bank.innerHTML = '';
+
+                // Reset all drop zones in the table
+                const dropZones = document.querySelectorAll('#screen-table-quiz .drop-zone');
+                dropZones.forEach(zone => {
+                    zone.innerHTML = '';
+                    zone.classList.remove('correct', 'wrong');
+                });
+
+                // Generate 19 phonemes based on the answers
+                let phonemes = ['p', 't', 'k', 'b', 'd', 'g', 'f', 'θ', 's', 'ʃ', 'h', 'v', 'ð', 'z', 'ʒ', '(tʃ)', 'tʃ', '(dʒ)', 'dʒ'];
+                phonemes = this.shuffle(phonemes);
+
+                phonemes.forEach((ph, index) => {
+                    const tile = document.createElement('div');
+                    tile.id = `tile-${index}`;
+                    tile.className = 'phoneme-tile';
+                    tile.draggable = true;
+                    tile.innerHTML = `<span class="pointer-events-none">${ph}</span>`;
+                    
+                    // Native Drag Events
+                    tile.ondragstart = (e) => this.handleDragStart(e, tile.id);
+                    
+                    // Touch/Click selection event
+                    tile.onclick = (e) => {
+                        e.stopPropagation();
+                        this.selectTile(tile);
+                    };
+
+                    bank.appendChild(tile);
+                });
+            },
+
+            // Click-to-place logic (Mobile friendly)
+            selectTile(tile) {
+                // If it's already selected, unselect it
+                if (this.tableQuizState.selectedTile === tile) {
+                    tile.classList.remove('selected');
+                    this.tableQuizState.selectedTile = null;
+                    return;
+                }
+                
+                // Unselect previous
+                if (this.tableQuizState.selectedTile) {
+                    this.tableQuizState.selectedTile.classList.remove('selected');
+                }
+                
+                this.tableQuizState.selectedTile = tile;
+                tile.classList.add('selected');
+            },
+
+            clickZone(zone) {
+                // If a tile is currently selected via click
+                if (this.tableQuizState.selectedTile) {
+                    const tile = this.tableQuizState.selectedTile;
+                    
+                    // Reset styling from previous submits just in case
+                    tile.classList.remove('correct-tile', 'wrong-tile', 'selected');
+                    zone.classList.remove('correct', 'wrong');
+
+                    // If zone already has a tile, swap it back to the bank
+                    if (zone.children.length > 0) {
+                        const existingTile = zone.children[0];
+                        existingTile.classList.remove('correct-tile', 'wrong-tile');
+                        document.getElementById('phoneme-bank').appendChild(existingTile);
+                    }
+
+                    zone.appendChild(tile);
+                    this.tableQuizState.selectedTile = null;
+                } 
+                // If no tile selected, but zone has a tile, click to send it back to bank
+                else if (zone.children.length > 0) {
+                    const existingTile = zone.children[0];
+                    existingTile.classList.remove('correct-tile', 'wrong-tile');
+                    zone.classList.remove('correct', 'wrong');
+                    document.getElementById('phoneme-bank').appendChild(existingTile);
+                }
+            },
+
+            // Native HTML5 Drag & Drop Handlers
+            handleDragStart(e, id) {
+                e.dataTransfer.setData('text/plain', id);
+                e.dataTransfer.effectAllowed = 'move';
+                
+                // Clear any tap-selection if dragging starts
+                if (this.tableQuizState.selectedTile) {
+                    this.tableQuizState.selectedTile.classList.remove('selected');
+                    this.tableQuizState.selectedTile = null;
+                }
+            },
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const zone = e.currentTarget;
+                zone.classList.add('drag-over');
+            },
+
+            handleDragLeave(e) {
+                const zone = e.currentTarget;
+                zone.classList.remove('drag-over');
+            },
+
+            handleDrop(e, zone) {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                
+                const tileId = e.dataTransfer.getData('text/plain');
+                if (!tileId) return;
+                
+                const tile = document.getElementById(tileId);
+                if (!tile) return;
+
+                // Reset statuses
+                tile.classList.remove('correct-tile', 'wrong-tile', 'selected');
+                zone.classList.remove('correct', 'wrong');
+
+                // If zone is occupied, send existing child to bank
+                if (zone.children.length > 0) {
+                    const existingTile = zone.children[0];
+                    existingTile.classList.remove('correct-tile', 'wrong-tile');
+                    document.getElementById('phoneme-bank').appendChild(existingTile);
+                }
+
+                zone.appendChild(tile);
+            },
+
+            submitTableQuiz() {
+                const dropZones = document.querySelectorAll('#screen-table-quiz .drop-zone');
+                let allCorrect = true;
+                let filledCount = 0;
+
+                dropZones.forEach(zone => {
+                    const expected = zone.dataset.answer;
+                    
+                    if (zone.children.length > 0) {
+                        filledCount++;
+                        const tile = zone.children[0];
+                        const userAns = tile.innerText.trim();
+                        
+                        // Clear old classes
+                        zone.classList.remove('correct', 'wrong');
+                        tile.classList.remove('correct-tile', 'wrong-tile');
+
+                        if (userAns === expected) {
+                            zone.classList.add('correct');
+                            tile.classList.add('correct-tile');
+                        } else {
+                            zone.classList.add('wrong');
+                            tile.classList.add('wrong-tile');
+                            allCorrect = false;
+                        }
+                    } else {
+                        // Empty cell counts as wrong for completion
+                        allCorrect = false;
+                    }
+                });
+
+                if (filledCount === 0) {
+                    alert('请先填入音标再提交！');
+                    return;
+                }
+
+                if (allCorrect) {
+                    alert('太棒了！你完美填对了前三排所有的辅音！\n\n(提示: 你可以点击返回主页，或者在当前页面反复练习)');
+                } else {
+                    // Optional: Visual shake effect for wrong ones could be added here
+                }
             },
 
             // --- SHARED ---
